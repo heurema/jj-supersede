@@ -62,7 +62,7 @@ def test_extract_python_functions():
     names = [f.name for f in fns]
     assert "hello" in names
     assert "goodbye" in names
-    assert "method" in names
+    assert "Foo.method" in names  # qualified name
     assert len(fns) == 3
 
 
@@ -142,3 +142,79 @@ def test_diff_functions_none_new():
     assert len(diff.added) == 0
     assert len(diff.removed) == 3
     assert len(diff.modified) == 0
+
+
+def test_qualified_names_same_method_different_classes():
+    """Fix for C2/G2: same-named methods in different classes must not collide."""
+    source = '''\
+class Auth:
+    def validate(self):
+        return True
+
+class Token:
+    def validate(self):
+        return False
+'''
+    fns = extract_functions(source, "example.py")
+    names = [f.name for f in fns]
+    assert "Auth.validate" in names
+    assert "Token.validate" in names
+    assert len(fns) == 2
+
+
+def test_qualified_names_nested_functions():
+    source = '''\
+def outer():
+    def inner():
+        pass
+    return inner
+'''
+    fns = extract_functions(source, "example.py")
+    names = [f.name for f in fns]
+    assert "outer" in names
+    assert "outer.inner" in names
+    assert len(fns) == 2
+
+
+def test_diff_same_named_methods_no_collision():
+    """Ensure same-named methods in different classes don't collapse in diff."""
+    old = '''\
+class A:
+    def run(self):
+        return 1
+
+class B:
+    def run(self):
+        return 2
+'''
+    new = '''\
+class A:
+    def run(self):
+        return 10
+
+class B:
+    def run(self):
+        return 2
+'''
+    diff = diff_functions(old, new, "example.py")
+    modified_names = [old_fn.name for old_fn, _ in diff.modified]
+    assert "A.run" in modified_names
+    assert "B.run" not in modified_names  # B.run unchanged
+
+
+def test_js_method_extraction():
+    """Fix for C1: JS class methods must get proper names."""
+    source = '''\
+class Api {
+    fetch() {
+        return null;
+    }
+    save(data) {
+        return data;
+    }
+}
+'''
+    fns = extract_functions(source, "api.js")
+    names = [f.name for f in fns]
+    assert any("fetch" in n for n in names)
+    assert any("save" in n for n in names)

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import sys
+
 import click
 
 from . import __version__
@@ -72,13 +74,18 @@ def scan(threshold: float, limit: int, revset: str, as_json: bool, cwd: str | No
     """Scan recent changes for superseded functions."""
     change_ids = get_recent_changes(cwd=cwd, limit=limit, revset=revset)
     all_candidates: list[SupersessionCandidate] = []
+    errors = 0
 
     for cid in change_ids:
         try:
             candidates = _analyze_chain(cid, cwd=cwd, threshold=threshold)
             all_candidates.extend(candidates)
-        except RuntimeError:
-            continue
+        except RuntimeError as e:
+            errors += 1
+            click.echo(f"warning: skipped {cid[:12]}: {e}", err=True)
+
+    if errors:
+        click.echo(f"warning: {errors}/{len(change_ids)} changes failed to analyze", err=True)
 
     deduped = filter_candidates(all_candidates, threshold)
     if as_json:
@@ -96,13 +103,18 @@ def report(threshold: float, limit: int, revset: str, cwd: str | None) -> None:
     """Generate JSON report for signum integration."""
     change_ids = get_recent_changes(cwd=cwd, limit=limit, revset=revset)
     all_candidates: list[SupersessionCandidate] = []
+    errors = 0
 
     for cid in change_ids:
         try:
             candidates = _analyze_chain(cid, cwd=cwd, threshold=threshold)
             all_candidates.extend(candidates)
-        except RuntimeError:
-            continue
+        except RuntimeError as e:
+            errors += 1
+            click.echo(f"warning: skipped {cid[:12]}: {e}", err=True)
+
+    if errors:
+        click.echo(f"warning: {errors}/{len(change_ids)} changes failed to analyze", err=True)
 
     deduped = filter_candidates(all_candidates, threshold)
     click.echo(format_json(deduped))

@@ -34,7 +34,7 @@ def _get_language(path: str) -> tuple[Language, list[str]] | None:
 
 @dataclass(frozen=True)
 class FunctionDef:
-    name: str
+    name: str  # qualified: "ClassName.method" or "outer.inner" for nested
     start_byte: int
     end_byte: int
     start_line: int
@@ -46,12 +46,15 @@ class FunctionDef:
         return (self.start_byte, self.end_byte)
 
 
+_NAME_NODE_TYPES = {"identifier", "name", "property_identifier", "private_property_identifier"}
+
+
 def _extract_name(node) -> str:
     """Extract function name from a function node."""
     for child in node.children:
-        if child.type in ("identifier", "name"):
+        if child.type in _NAME_NODE_TYPES:
             return child.text.decode("utf-8")
-    return "<anonymous>"
+    return f"<anonymous@L{node.start_point.row + 1}>"
 
 
 def parse_source(source: str, path: str) -> Tree | None:
@@ -80,12 +83,23 @@ def extract_functions(source: str, path: str) -> list[FunctionDef]:
     return functions
 
 
+def _qualify_name(name: str, parent_names: list[str]) -> str:
+    """Build qualified name: Class.method or outer.inner."""
+    if parent_names:
+        return ".".join(parent_names) + "." + name
+    return name
+
+
 def _walk_for_functions(
-    node, node_types: list[str], source_bytes: bytes, out: list[FunctionDef]
+    node, node_types: list[str], source_bytes: bytes, out: list[FunctionDef],
+    parent_names: list[str] | None = None,
 ) -> None:
     """Recursively walk tree to find function nodes."""
+    if parent_names is None:
+        parent_names = []
     if node.type in node_types:
-        name = _extract_name(node)
+        raw_name = _extract_name(node)
+        name = _qualify_name(raw_name, parent_names)
         body = source_bytes[node.start_byte : node.end_byte]
         out.append(
             FunctionDef(
@@ -97,8 +111,19 @@ def _walk_for_functions(
                 body_hash=hash(body),
             )
         )
+        # Nested functions get this function as parent
+        for child in node.children:
+            _walk_for_functions(child, node_types, source_bytes, out, parent_names + [raw_name])
+        return
+
+    # Track class/impl scope for qualifying method names
+    scope_name = None
+    if node.type in ("class_definition", "class_declaration", "impl_item"):
+        scope_name = _extract_name(node)
+
+    child_parents = parent_names + [scope_name] if scope_name else parent_names
     for child in node.children:
-        _walk_for_functions(child, node_types, source_bytes, out)
+        _walk_for_functions(child, node_types, source_bytes, out, child_parents)
 
 
 def get_changed_ranges(old_source: str, new_source: str, path: str) -> list[tuple[int, int]]:

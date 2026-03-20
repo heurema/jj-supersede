@@ -110,11 +110,14 @@ def get_changed_files(from_commit: str, to_commit: str, *, cwd: str | None = Non
 
 
 def get_file_content(commit_id: str, path: str, *, cwd: str | None = None) -> str | None:
-    """Get file content at a specific commit. Returns None if file doesn't exist."""
+    """Get file content at a specific commit. Returns None if file doesn't exist at that revision."""
     try:
         return run_jj("file", "show", path, "-r", commit_id, cwd=cwd)
-    except RuntimeError:
-        return None
+    except RuntimeError as e:
+        msg = str(e).lower()
+        if "no such path" in msg or "path not found" in msg or "doesn't exist" in msg:
+            return None
+        raise
 
 
 def get_recent_changes(
@@ -132,4 +135,11 @@ def get_recent_changes(
         str(limit),
         cwd=cwd,
     )
-    return [cid.strip() for cid in raw.strip().splitlines() if cid.strip()]
+    seen: set[str] = set()
+    result: list[str] = []
+    for cid in raw.strip().splitlines():
+        cid = cid.strip()
+        if cid and cid not in seen:
+            seen.add(cid)
+            result.append(cid)
+    return result
