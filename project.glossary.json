@@ -1,0 +1,87 @@
+{
+  "version": "1.0",
+  "generatedAt": "2026-03-20T00:00:00Z",
+  "canonicalTerms": [
+    {
+      "term": "supersession",
+      "definition": "The state where solution A has been functionally replaced by solution B but A remains structurally present in the codebase."
+    },
+    {
+      "term": "ghost solution",
+      "definition": "A code artifact that compiles, has tests, and may be imported, but is semantically superseded — it is no longer the intended correct implementation."
+    },
+    {
+      "term": "predecessor chain",
+      "definition": "The linked list of jj CommitEvolutionEntry records connecting each version of a change to the versions it replaced. Traversed via jj evolog or the jj-lib walk_predecessors() Rust API."
+    },
+    {
+      "term": "Change ID",
+      "definition": "jj's stable logical identifier for a unit of work. Unlike a git SHA, a Change ID survives all rewrites (amend, rebase, squash)."
+    },
+    {
+      "term": "CommitEvolutionEntry",
+      "definition": "The jj data structure representing one version of a change in its evolution history. Provides .commit(), .operation(), .predecessors(), and .inter_diff() methods."
+    },
+    {
+      "term": "supersession score",
+      "definition": "Composite float [0,1] measuring confidence that function B supersedes function A: score(A->B) = w1*function_overlap + w2*same_author + w3*recency_factor. Default threshold: 0.7."
+    },
+    {
+      "term": "function_overlap",
+      "definition": "Signal w1 in the supersession score. Measures AST-level similarity between two function versions using py-tree-sitter changed_ranges() intersected with function_definition node spans. Weight: 0.5."
+    },
+    {
+      "term": "PredecessorChain",
+      "definition": "Python dataclass in evolution.py encapsulating the parsed output of jj evolog for a given change, including the ordered list of CommitEntry records."
+    },
+    {
+      "term": "FunctionDiff",
+      "definition": "Python dataclass in functions.py representing the set of functions added, modified, or deleted between two versions of a file."
+    },
+    {
+      "term": "cleanupObligations",
+      "definition": "Array in signum's contract.json listing removal actions generated from jj-supersede output. Each entry has action: remove_code and a target function or file."
+    },
+    {
+      "term": "operation log",
+      "definition": "jj's atomic DAG of every VCS operation, each with timestamp and user identity. Since jj 0.30.0, predecessor data is stored canonically here."
+    },
+    {
+      "term": "divergent change",
+      "definition": "jj's term for two commits sharing the same Change ID — two competing implementations of the same logical unit of work exist simultaneously."
+    },
+    {
+      "term": "inter_diff",
+      "definition": "CommitEvolutionEntry method returning the diff rebased to the predecessor's parents, showing only what changed in a rewrite."
+    },
+    {
+      "term": "evolog",
+      "definition": "The jj evolog CLI command that shows the evolution history of a change. Primary data source for jj-supersede."
+    },
+    {
+      "term": "code entropy",
+      "definition": "Accumulation of structural degradation in AI-assisted codebases: ghost solutions, duplicate implementations, unresolved supersessions."
+    },
+    {
+      "term": "valid_time",
+      "definition": "Bitemporal term: the period during which a function was the intended correct solution. jj-supersede aims to make valid_to machine-queryable."
+    }
+  ],
+  "aliases": {
+    "ghost code": "ghost solution",
+    "stale solution": "ghost solution",
+    "predecessor": "predecessor chain",
+    "evolution entry": "CommitEvolutionEntry",
+    "evolog entry": "CommitEvolutionEntry",
+    "change id": "Change ID",
+    "jj change": "Change ID",
+    "score": "supersession score",
+    "overlap": "function_overlap",
+    "cleanup obligations": "cleanupObligations",
+    "op log": "operation log",
+    "divergence": "divergent change",
+    "valid to": "valid_time",
+    "entropy": "code entropy",
+    "jj evolog": "evolog"
+  }
+}
