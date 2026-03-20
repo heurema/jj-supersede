@@ -118,3 +118,37 @@ def report(threshold: float, limit: int, revset: str, cwd: str | None) -> None:
 
     deduped = filter_candidates(all_candidates, threshold)
     click.echo(format_json(deduped))
+
+
+@main.command()
+@click.option("--threshold", "-t", default=0.7, type=float, help="Minimum score threshold (0-1)")
+@click.option("--limit", "-n", default=20, type=int, help="Max changes to scan")
+@click.option("--revset", "-r", default="mutable()", help="Revset to scan")
+@click.option("--cwd", "-C", default=None, type=click.Path(exists=True), help="Repository path")
+def context(threshold: float, limit: int, revset: str, cwd: str | None) -> None:
+    """Output agent context warnings for session-start hooks."""
+    try:
+        change_ids = get_recent_changes(cwd=cwd, limit=limit, revset=revset)
+    except RuntimeError:
+        return  # not a jj repo or jj not available — silent exit
+
+    all_candidates: list[SupersessionCandidate] = []
+    for cid in change_ids:
+        try:
+            all_candidates.extend(_analyze_chain(cid, cwd=cwd, threshold=threshold))
+        except RuntimeError:
+            continue
+
+    deduped = filter_candidates(all_candidates, threshold)
+    if not deduped:
+        return  # no warnings — no output
+
+    lines = [f"## Superseded Code ({len(deduped)} ghost functions detected)", ""]
+    for c in deduped:
+        lines.append(
+            f"- WARNING: {c.path}:{c.old_line} `{c.function_name}` "
+            f"superseded (score {c.score:.2f}, change {c.change_id[:12]})"
+        )
+    lines.append("")
+    lines.append("Run `jj-supersede detect <change-id>` for details.")
+    click.echo("\n".join(lines))
