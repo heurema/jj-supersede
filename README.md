@@ -75,11 +75,25 @@ Score  Function                                  File                 Old→New
 
 ## Integration
 
-`jj-supersede report --json` produces output for [signum](https://github.com/heurema/signum)'s CONTRACT phase, which translates supersession candidates into `cleanupObligations`.
+### signum (v4.15.0+)
+
+[signum](https://github.com/heurema/signum)'s contractor automatically calls `jj-supersede report --json` during the CONTRACT phase in jj repositories. Superseded functions become `removals` (type: `function`) and non-blocking `cleanupObligations` (action: `remove_code`).
 
 ```
-jj-supersede scan --json → signum CONTRACT → cleanupObligations → EXECUTE → RECONCILE
+jj-supersede report --json → signum CONTRACT → cleanupObligations → EXECUTE → RECONCILE
 ```
+
+No configuration needed — the integration is optional and silently skipped if jj-supersede is not installed.
+
+### Claude Code session-start hook
+
+The `context` command outputs warnings for agent injection:
+
+```bash
+jj-supersede context
+```
+
+A [session-start hook](hooks/session-start.sh) wraps this for Claude Code's SessionStart event, injecting ghost solution warnings into the agent's system prompt at session start.
 
 ## Development
 
