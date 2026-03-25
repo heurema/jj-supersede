@@ -1,8 +1,19 @@
-# jj-supersede
+```
+       _   _                                                __
+      (_) (_)     _______  ______  ___  _____________  ____/ /__
+     / / / /_____/ ___/ / / / __ \/ _ \/ ___/ ___/ _ \/ __  / _ \
+    / / / /_____(__  ) /_/ / /_/ /  __/ /  (__  )  __/ /_/ /  __/
+ __/ /_/ /     /____/\__,_/ .___/\___/_/  /____/\___/\__,_/\___/
+/___/___/                /_/
+```
 
-Detect function-level code supersession in [jj](https://jj-vcs.dev/) repositories.
+**Detect function-level code supersession in jj repositories.**
 
-When AI agents rewrite code over multiple sessions, the old implementation often stays behind — it compiles, has tests, may be imported, but is no longer the intended solution. jj-supersede finds these ghost solutions by walking jj's predecessor chains and comparing function bodies via tree-sitter.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+> Find ghost solutions left behind by AI agents — code that compiles, has tests, but is no longer the intended solution.
+
+---
 
 ## Install
 
